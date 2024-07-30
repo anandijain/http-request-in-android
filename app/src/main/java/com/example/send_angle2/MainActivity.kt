@@ -109,7 +109,7 @@ fun MyApp(ortSession: OrtSession?) {
     var angle2 by remember { mutableStateOf("") }
     var responseText by remember { mutableStateOf("Press the button to set servo angles") }
     var resultsText by remember { mutableStateOf("Results will be shown here") }
-//    var filteredBoxes by remember { mutableStateOf<List<List<<Float>>(emptyList(emptyList())) }
+    var filteredBoxes by remember { mutableStateOf<List<List<Float>>>(emptyList()) }
 
     MaterialTheme {
         Surface {
@@ -199,33 +199,7 @@ fun MyApp(ortSession: OrtSession?) {
                 }
                 item {
                     val imageBitmap = ImageBitmap.imageResource(id = R.raw.me)
-
-                    Box(
-                        modifier = Modifier
-                            .width(320.dp)
-                            .height(240.dp)
-                    ) {
-                        Image(
-                            bitmap = imageBitmap,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
-                        )
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val centerX = size.width / 2
-                            val centerY = size.height / 2
-                            drawRect(
-                                color = Color.Red,
-                                topLeft = androidx.compose.ui.geometry.Offset(
-                                    centerX - 50,
-                                    centerY - 50
-                                ),
-                                size = androidx.compose.ui.geometry.Size(100f, 100f),
-                                style = Stroke(width = 4.dp.toPx())
-                            )
-                        }
-                    }
-                    // Convert imageBitmap to tensor
+// Convert imageBitmap to tensor
                     val tensor = remember {
                         createTensorFromImage(imageBitmap)
                     }
@@ -245,13 +219,42 @@ fun MyApp(ortSession: OrtSession?) {
                             resultsText += results.get("scores").get().info
                             resultsText += results.get("boxes").get().info
                             resultsText += "\n"
-                            val filteredBoxes = nonMaxSuppression(boxes, scores, 0.9f, 0.7f)
+                            filteredBoxes = nonMaxSuppression(boxes, scores, 0.9f, 0.7f)
 
                             resultsText += "Filtered Boxes count: " + filteredBoxes.size.toString()
                             resultsText += filteredBoxes.toString()
                         }
 
                     }
+                    Box(
+                        modifier = Modifier
+                            .width(320.dp)
+                            .height(240.dp)
+                    ) {
+                        Image(
+                            bitmap = imageBitmap,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            filteredBoxes.forEach { box ->
+                                val (x1, y1, x2, y2) = box
+                                val left = x1 * size.width
+                                val top = y1 * size.height
+                                val right = x2 * size.width
+                                val bottom = y2 * size.height
+
+                                drawRect(
+                                    color = Color.Red,
+                                    topLeft = androidx.compose.ui.geometry.Offset(left, top),
+                                    size = androidx.compose.ui.geometry.Size(right - left, bottom - top),
+                                    style = Stroke(width = 4.dp.toPx())
+                                )
+                            }
+                        }
+                    }
+
                 }
 
                 item {
